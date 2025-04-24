@@ -1,0 +1,16 @@
+# Pliki Qt
+*.pro.user
+build-*
+*.o
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Pliki tymczasowe
+*~
+*.swp
+
+# Foldery generowane
+debug/
+release/
