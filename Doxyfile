@@ -1,0 +1,15 @@
+PROJECT_NAME           = "Monitor Jakości Powietrza"
+OUTPUT_DIRECTORY       = docs
+OUTPUT_LANGUAGE        = Polish
+INPUT                  = .
+RECURSIVE              = YES
+FILE_PATTERNS          = *.cpp *.h *.qml
+EXTENSION_MAPPING      = qml=JavaScript
+GENERATE_HTML          = YES
+GENERATE_LATEX         = YES
+HAVE_DOT               = YES
+CLASS_DIAGRAMS         = YES
+SOURCE_BROWSER         = YES
+SHOW_INCLUDE_FILES     = YES
+INLINE_SOURCES         = YES
+HTML_STYLESHEET        = custom.css

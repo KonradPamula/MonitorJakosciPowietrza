@@ -1,8 +1,14 @@
 #include "mainwindow.h"
 #include <QDebug>
 #include <QDateTime>
-#include <algorithm> // Dla std::sort
+#include <algorithm>
 
+/**
+ * @brief Konstruktor klasy MainWindow.
+ *
+ * Inicjalizuje menedżera sieciowego i pobiera dane o stacjach z API.
+ * @param parent Wskaźnik na obiekt nadrzędny (domyślnie nullptr).
+ */
 MainWindow::MainWindow(QObject *parent)
     : QObject(parent)
 {
@@ -10,10 +16,18 @@ MainWindow::MainWindow(QObject *parent)
     fetchStations();
 }
 
+/**
+ * @brief Destruktor klasy MainWindow.
+ *
+ * Zwalnia zasoby (menedżer sieciowy zwalniany automatycznie jako dziecko QObject).
+ */
 MainWindow::~MainWindow()
 {
 }
 
+/**
+ * @brief Pobiera dane o wszystkich stacjach z API.
+ */
 void MainWindow::fetchStations()
 {
     QNetworkRequest request((QUrl(API_BASE_URL + API_STATIONS_ENDPOINT)));
@@ -21,6 +35,10 @@ void MainWindow::fetchStations()
     connect(reply, &QNetworkReply::finished, this, &MainWindow::onStationsReceived);
 }
 
+/**
+ * @brief Pobiera dane o czujnikach dla danej stacji z API.
+ * @param stationId Identyfikator stacji.
+ */
 void MainWindow::fetchSensors(int stationId)
 {
     QNetworkRequest request((QUrl(API_BASE_URL + API_SENSORS_ENDPOINT + QString::number(stationId))));
@@ -28,6 +46,10 @@ void MainWindow::fetchSensors(int stationId)
     connect(reply, &QNetworkReply::finished, this, &MainWindow::onSensorsReceived);
 }
 
+/**
+ * @brief Pobiera pomiary dla danego czujnika z API.
+ * @param sensorId Identyfikator czujnika.
+ */
 void MainWindow::fetchMeasurements(int sensorId)
 {
     QNetworkRequest request((QUrl(API_BASE_URL + API_MEASUREMENTS_ENDPOINT + QString::number(sensorId))));
@@ -35,6 +57,10 @@ void MainWindow::fetchMeasurements(int sensorId)
     connect(reply, &QNetworkReply::finished, this, &MainWindow::onMeasurementsReceived);
 }
 
+/**
+ * @brief Pobiera indeks jakości powietrza dla danej stacji z API.
+ * @param stationId Identyfikator stacji.
+ */
 void MainWindow::fetchAirQualityIndex(int stationId)
 {
     QNetworkRequest request((QUrl(API_BASE_URL + API_AIR_QUALITY_ENDPOINT + QString::number(stationId))));
@@ -42,6 +68,9 @@ void MainWindow::fetchAirQualityIndex(int stationId)
     connect(reply, &QNetworkReply::finished, this, &MainWindow::onAirQualityIndexReceived);
 }
 
+/**
+ * @brief Obsługuje odpowiedź API z danymi o stacjach.
+ */
 void MainWindow::onStationsReceived()
 {
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
@@ -56,7 +85,6 @@ void MainWindow::onStationsReceived()
             }
             allStations = jsonDoc.array();
 
-            // Store stations in map for quick access
             for (const QJsonValue& value : allStations) {
                 QJsonObject station = value.toObject();
                 int id = station["id"].toInt();
@@ -66,7 +94,7 @@ void MainWindow::onStationsReceived()
             displayStations(allStations);
         } catch (const std::exception& e) {
             qDebug() << "Exception while parsing stations JSON:" << e.what();
-            emit stationsUpdateRequested(QVariantList()); // Emit empty list to clear UI
+            emit stationsUpdateRequested(QVariantList());
         }
     } else {
         qDebug() << "Error fetching stations:" << reply->errorString();
@@ -74,6 +102,9 @@ void MainWindow::onStationsReceived()
     reply->deleteLater();
 }
 
+/**
+ * @brief Obsługuje odpowiedź API z danymi o czujnikach.
+ */
 void MainWindow::onSensorsReceived()
 {
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
@@ -108,7 +139,7 @@ void MainWindow::onSensorsReceived()
             emit sensorsUpdateRequested(sensorsList);
         } catch (const std::exception& e) {
             qDebug() << "Exception while parsing sensors JSON:" << e.what();
-            emit sensorsUpdateRequested(QVariantList()); // Emit empty list to clear UI
+            emit sensorsUpdateRequested(QVariantList());
         }
     } else {
         qDebug() << "Error fetching sensors:" << reply->errorString();
@@ -116,6 +147,9 @@ void MainWindow::onSensorsReceived()
     reply->deleteLater();
 }
 
+/**
+ * @brief Obsługuje odpowiedź API z danymi pomiarowymi.
+ */
 void MainWindow::onMeasurementsReceived()
 {
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
@@ -146,17 +180,14 @@ void MainWindow::onMeasurementsReceived()
                 valuesList.append(point);
             }
 
-            // Zapisz aktualne dane do użycia później
             currentMeasurementKey = key;
             currentMeasurements = valuesList;
 
-            // Sprawdź, czy są dostępne dane historyczne
             emit historicalDataAvailableChanged(hasHistoricalData(currentStationId, currentSensorId));
-
             emit measurementsUpdateRequested(key, valuesList);
         } catch (const std::exception& e) {
             qDebug() << "Exception while parsing measurements JSON:" << e.what();
-            emit measurementsUpdateRequested("Error", QVariantList()); // Emit empty list to clear UI
+            emit measurementsUpdateRequested("Error", QVariantList());
         }
     } else {
         qDebug() << "Error fetching measurements:" << reply->errorString();
@@ -164,6 +195,9 @@ void MainWindow::onMeasurementsReceived()
     reply->deleteLater();
 }
 
+/**
+ * @brief Obsługuje odpowiedź API z indeksem jakości powietrza.
+ */
 void MainWindow::onAirQualityIndexReceived()
 {
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
@@ -178,7 +212,6 @@ void MainWindow::onAirQualityIndexReceived()
             }
             QJsonObject airQuality = jsonDoc.object();
 
-            // Zapisujemy aktualne dane jakości powietrza
             currentAirQuality = airQuality;
 
             QString indexLevelName = airQuality["stIndexLevel"].toObject()["indexLevelName"].toString();
@@ -197,9 +230,7 @@ void MainWindow::onAirQualityIndexReceived()
                 color = "red";
             }
 
-            // Sprawdź, czy są dostępne dane historyczne
             emit historicalDataAvailableChanged(hasHistoricalData(currentStationId));
-
             emit airQualityUpdateRequested(text, color);
         } catch (const std::exception& e) {
             qDebug() << "Exception while parsing air quality JSON:" << e.what();
@@ -211,6 +242,10 @@ void MainWindow::onAirQualityIndexReceived()
     reply->deleteLater();
 }
 
+/**
+ * @brief Obsługuje wybór stacji przez użytkownika.
+ * @param stationId Identyfikator wybranej stacji.
+ */
 void MainWindow::stationSelected(int stationId)
 {
     if (!stationsMap.contains(stationId)) return;
@@ -223,21 +258,27 @@ void MainWindow::stationSelected(int stationId)
     fetchSensors(stationId);
     fetchAirQualityIndex(stationId);
 
-    // Sprawdź, czy są dostępne dane historyczne dla tej stacji
     emit historicalDataAvailableChanged(hasHistoricalData(stationId));
 }
 
+/**
+ * @brief Obsługuje wybór czujnika przez użytkownika.
+ * @param sensorId Identyfikator wybranego czujnika.
+ */
 void MainWindow::sensorSelected(int sensorId)
 {
     if (sensorId > 0) {
         currentSensorId = sensorId;
         fetchMeasurements(sensorId);
 
-        // Sprawdź, czy są dostępne dane historyczne dla tego czujnika
         emit historicalDataAvailableChanged(hasHistoricalData(currentStationId, sensorId));
     }
 }
 
+/**
+ * @brief Filtruje stacje na podstawie tekstu wyszukiwania.
+ * @param searchText Tekst wyszukiwania (nazwa miejscowości).
+ */
 void MainWindow::searchStations(const QString& searchText)
 {
     if (searchText.isEmpty()) {
@@ -257,11 +298,18 @@ void MainWindow::searchStations(const QString& searchText)
     displayStations(filteredStations);
 }
 
+/**
+ * @brief Wyświetla wszystkie stacje.
+ */
 void MainWindow::showAllStations()
 {
     displayStations(allStations);
 }
 
+/**
+ * @brief Przygotowuje listę stacji do wyświetlenia w interfejsie.
+ * @param stations Tablica JSON z danymi stacji.
+ */
 void MainWindow::displayStations(const QJsonArray& stations)
 {
     QVariantList stationsList;
@@ -284,6 +332,11 @@ void MainWindow::displayStations(const QJsonArray& stations)
     emit stationsUpdateRequested(stationsList);
 }
 
+/**
+ * @brief Generuje informacje o stacji w formacie HTML.
+ * @param station Obiekt JSON z danymi stacji.
+ * @return Tekst HTML z informacjami o stacji.
+ */
 QString MainWindow::generateStationInfo(const QJsonObject& station)
 {
     QString stationName = station["stationName"].toString();
@@ -310,8 +363,10 @@ QString MainWindow::generateStationInfo(const QJsonObject& station)
     return info;
 }
 
-// Metody do obsługi bazy danych lokalnych
-
+/**
+ * @brief Zwraca ścieżkę do lokalnej bazy danych.
+ * @return Ścieżka do katalogu bazy danych.
+ */
 QString MainWindow::getDatabasePath()
 {
     QString dataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
@@ -330,6 +385,12 @@ QString MainWindow::getDatabasePath()
     return dataPath;
 }
 
+/**
+ * @brief Generuje ścieżkę do pliku z pomiarami.
+ * @param stationId Identyfikator stacji.
+ * @param sensorId Identyfikator czujnika.
+ * @return Ścieżka do pliku JSON z pomiarami.
+ */
 QString MainWindow::getMeasurementsFilePath(int stationId, int sensorId)
 {
     return QString("%1/measurements_station%2_sensor%3.json")
@@ -338,6 +399,11 @@ QString MainWindow::getMeasurementsFilePath(int stationId, int sensorId)
         .arg(sensorId);
 }
 
+/**
+ * @brief Generuje ścieżkę do pliku z indeksem jakości powietrza.
+ * @param stationId Identyfikator stacji.
+ * @return Ścieżka do pliku JSON z danymi jakości powietrza.
+ */
 QString MainWindow::getAirQualityFilePath(int stationId)
 {
     return QString("%1/airquality_station%2.json")
@@ -345,6 +411,12 @@ QString MainWindow::getAirQualityFilePath(int stationId)
         .arg(stationId);
 }
 
+/**
+ * @brief Zapisuje dokument JSON do pliku.
+ * @param filePath Ścieżka do pliku.
+ * @param jsonDoc Dokument JSON do zapisania.
+ * @return True, jeśli zapis się powiódł, w przeciwnym razie false.
+ */
 bool MainWindow::saveJsonToFile(const QString& filePath, const QJsonDocument& jsonDoc)
 {
     try {
@@ -362,6 +434,11 @@ bool MainWindow::saveJsonToFile(const QString& filePath, const QJsonDocument& js
     }
 }
 
+/**
+ * @brief Wczytuje dokument JSON z pliku.
+ * @param filePath Ścieżka do pliku.
+ * @return Dokument JSON lub pusty dokument w przypadku błędu.
+ */
 QJsonDocument MainWindow::loadJsonFromFile(const QString& filePath)
 {
     try {
@@ -384,6 +461,9 @@ QJsonDocument MainWindow::loadJsonFromFile(const QString& filePath)
     }
 }
 
+/**
+ * @brief Zapisuje bieżące pomiary do lokalnej bazy danych.
+ */
 void MainWindow::saveMeasurementsToDatabase()
 {
     if (currentStationId < 0 || currentSensorId < 0 || currentMeasurements.isEmpty()) {
@@ -417,6 +497,9 @@ void MainWindow::saveMeasurementsToDatabase()
     }
 }
 
+/**
+ * @brief Zapisuje bieżący indeks jakości powietrza do lokalnej bazy danych.
+ */
 void MainWindow::saveAirQualityToDatabase()
 {
     if (currentStationId < 0 || currentAirQuality.isEmpty()) {
@@ -438,19 +521,27 @@ void MainWindow::saveAirQualityToDatabase()
     }
 }
 
+/**
+ * @brief Sprawdza, czy istnieją dane historyczne dla stacji lub czujnika.
+ * @param stationId Identyfikator stacji.
+ * @param sensorId Identyfikator czujnika (domyślnie -1 dla indeksu jakości powietrza).
+ * @return True, jeśli dane historyczne istnieją, w przeciwnym razie false.
+ */
 bool MainWindow::hasHistoricalData(int stationId, int sensorId)
 {
     if (sensorId == -1) {
-        // Sprawdzamy tylko dane dla stacji
         QFile file(getAirQualityFilePath(stationId));
         return file.exists();
     } else {
-        // Sprawdzamy dane dla czujnika
         QFile file(getMeasurementsFilePath(stationId, sensorId));
         return file.exists();
     }
 }
 
+/**
+ * @brief Wczytuje historyczne pomiary dla czujnika.
+ * @param sensorId Identyfikator czujnika.
+ */
 void MainWindow::loadHistoricalMeasurements(int sensorId)
 {
     if (currentStationId < 0) {
@@ -479,6 +570,10 @@ void MainWindow::loadHistoricalMeasurements(int sensorId)
     }
 }
 
+/**
+ * @brief Wczytuje historyczny indeks jakości powietrza dla stacji.
+ * @param stationId Identyfikator stacji.
+ */
 void MainWindow::loadHistoricalAirQuality(int stationId)
 {
     QString filePath = getAirQualityFilePath(stationId);
@@ -510,6 +605,10 @@ void MainWindow::loadHistoricalAirQuality(int stationId)
     }
 }
 
+/**
+ * @brief Przełącza między danymi bieżącymi a historycznymi.
+ * @param useHistorical True dla danych historycznych, false dla bieżących.
+ */
 void MainWindow::toggleDataSource(bool useHistorical)
 {
     if (useHistorical) {
@@ -529,6 +628,10 @@ void MainWindow::toggleDataSource(bool useHistorical)
     }
 }
 
+/**
+ * @brief Analizuje pomiary i zwraca statystyki.
+ * @return QVariantMap z wynikami analizy (średnia, mediana, min, max, liczba pomiarów).
+ */
 QVariantMap MainWindow::analyzeMeasurements()
 {
     QVariantMap analysis;
@@ -561,11 +664,9 @@ QVariantMap MainWindow::analyzeMeasurements()
         return analysis;
     }
 
-    // Oblicz średnią
     double average = sum / count;
     analysis["average"] = QString::number(average, 'f', 2);
 
-    // Oblicz medianę
     std::sort(values.begin(), values.end());
     double median;
     if (count % 2 == 0) {
@@ -575,11 +676,8 @@ QVariantMap MainWindow::analyzeMeasurements()
     }
     analysis["median"] = QString::number(median, 'f', 2);
 
-    // Wartości minimalna i maksymalna
     analysis["min"] = QString::number(minValue, 'f', 2);
     analysis["max"] = QString::number(maxValue, 'f', 2);
-
-    // Liczba pomiarów
     analysis["count"] = count;
 
     emit analysisUpdateRequested(analysis);

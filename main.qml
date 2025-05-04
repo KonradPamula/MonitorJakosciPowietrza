@@ -3,6 +3,12 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import QtCharts 2.15
 
+/**
+ * @brief Główny komponent interfejsu użytkownika aplikacji.
+ *
+ * ApplicationWindow definiuje główne okno aplikacji do monitorowania jakości powietrza.
+ * Zawiera nagłówek, panele z informacjami o stacjach, wykresy i listę stacji pomiarowych.
+ */
 ApplicationWindow {
     id: root
     visible: true
@@ -11,25 +17,39 @@ ApplicationWindow {
     title: "Monitor Jakości Powietrza - GIOŚ"
     color: "#f5f5f5"
 
+    /// @brief Aktualnie wybrana stacja pomiarowa.
     property var currentStation: null
+    /// @brief Aktualnie wybrany czujnik.
     property var currentSensor: null
+    /// @brief Czy dostępne są dane historyczne.
     property bool hasHistoricalData: false
+    /// @brief Czy używane są dane historyczne.
     property bool usingHistoricalData: false
-    property bool showAnalysis: false // New property to toggle analysis visibility
+    /// @brief Czy pokazywać panel analizy danych.
+    property bool showAnalysis: false
 
-    // Definicje kolorów
+    /// @brief Główny kolor interfejsu (niebieski).
     property color primaryColor: "#1976D2"
+    /// @brief Kolor akcentu (zielony).
     property color accentColor: "#4CAF50"
+    /// @brief Kolor tekstu.
     property color textColor: "#424242"
+    /// @brief Jasny kolor tła.
     property color lightBgColor: "#FFFFFF"
+    /// @brief Kolor obramowania.
     property color borderColor: "#E0E0E0"
 
+    /**
+     * @brief Główny układ pionowy interfejsu.
+     *
+     * Zawiera nagłówek i główny obszar treści podzielony na dwie kolumny.
+     */
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16
         spacing: 16
 
-        // Nagłówek aplikacji
+        /// @brief Nagłówek aplikacji z tytułem i paskiem wyszukiwania.
         Rectangle {
             Layout.fillWidth: true
             height: 60
@@ -41,14 +61,16 @@ ApplicationWindow {
                 anchors.margins: 12
                 spacing: 12
 
+                /// @brief Ikona aplikacji (obecnie niewidoczna).
                 Image {
                     source: "qrc:/icons/air_quality.png"
                     sourceSize.width: 40
                     sourceSize.height: 40
                     fillMode: Image.PreserveAspectFit
-                    visible: false // Zmień na true jeśli masz ikonę
+                    visible: false
                 }
 
+                /// @brief Tytuł aplikacji.
                 Label {
                     text: "Monitor Jakości Powietrza"
                     font.pixelSize: 22
@@ -58,7 +80,7 @@ ApplicationWindow {
 
                 Item { Layout.fillWidth: true }
 
-                // Search bar
+                /// @brief Pasek wyszukiwania stacji.
                 Rectangle {
                     Layout.preferredWidth: 350
                     height: 40
@@ -71,6 +93,7 @@ ApplicationWindow {
                         anchors.margins: 8
                         spacing: 8
 
+                        /// @brief Pole tekstowe do wyszukiwania miejscowości.
                         TextField {
                             id: searchField
                             Layout.fillWidth: true
@@ -83,6 +106,7 @@ ApplicationWindow {
                             onAccepted: mainWindow.searchStations(text)
                         }
 
+                        /// @brief Przycisk wyszukiwania.
                         Rectangle {
                             width: 24
                             height: 24
@@ -105,6 +129,7 @@ ApplicationWindow {
                     }
                 }
 
+                /// @brief Przycisk do wyświetlania wszystkich stacji.
                 Button {
                     text: "Wszystkie stacje"
                     flat: true
@@ -124,20 +149,20 @@ ApplicationWindow {
             }
         }
 
-        // Główny obszar treści
+        /// @brief Główny obszar treści podzielony na dwie kolumny.
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 16
 
-            // Lewa kolumna - szczegóły i wykresy
+            /// @brief Lewa kolumna z informacjami o stacji, indeksem jakości i wykresami.
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 2
                 spacing: 12
 
-                // Panel informacji o stacji
+                /// @brief Panel z informacjami o wybranej stacji.
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 120
@@ -158,6 +183,7 @@ ApplicationWindow {
                             color: textColor
                         }
 
+                        /// @brief Obszar tekstowy z informacjami o stacji (HTML).
                         TextArea {
                             id: stationInfo
                             Layout.fillWidth: true
@@ -171,7 +197,7 @@ ApplicationWindow {
                     }
                 }
 
-                // Panel indeksu jakości powietrza
+                /// @brief Panel indeksu jakości powietrza.
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 90
@@ -185,6 +211,7 @@ ApplicationWindow {
                         anchors.margins: 12
                         spacing: 12
 
+                        /// @brief Wskaźnik jakości powietrza (okrąg z ikoną).
                         Rectangle {
                             id: qualityIndicator
                             width: 60
@@ -212,6 +239,7 @@ ApplicationWindow {
                                 color: textColor
                             }
 
+                            /// @brief Etykieta z opisem indeksu jakości powietrza.
                             Label {
                                 id: airQualityLabel
                                 text: "Brak danych"
@@ -222,7 +250,7 @@ ApplicationWindow {
                             }
                         }
 
-                        // Wybór czujnika
+                        /// @brief Lista rozwijana do wyboru czujnika.
                         ComboBox {
                             id: sensorsComboBox
                             Layout.preferredWidth: 200
@@ -244,7 +272,7 @@ ApplicationWindow {
                     }
                 }
 
-                // Panel kontroli danych historycznych
+                /// @brief Panel zarządzania danymi (zapis i dane historyczne).
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 60
@@ -266,6 +294,7 @@ ApplicationWindow {
                             color: textColor
                         }
 
+                        /// @brief Przycisk zapisu pomiarów do bazy danych.
                         Button {
                             id: saveMeasurementsButton
                             text: "Zapisz pomiary"
@@ -278,6 +307,7 @@ ApplicationWindow {
                             }
                         }
 
+                        /// @brief Przycisk zapisu indeksu jakości powietrza.
                         Button {
                             id: saveAirQualityButton
                             text: "Zapisz jakość powietrza"
@@ -292,6 +322,7 @@ ApplicationWindow {
 
                         Item { Layout.fillWidth: true }
 
+                        /// @brief Przełącznik danych historycznych.
                         Switch {
                             id: historicalDataSwitch
                             text: "Dane historyczne"
@@ -306,7 +337,7 @@ ApplicationWindow {
                     }
                 }
 
-                // Wykres pomiarów
+                /// @brief Panel z wykresem pomiarów.
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -333,6 +364,7 @@ ApplicationWindow {
 
                             Item { Layout.fillWidth: true }
 
+                            /// @brief Przycisk pokazywania/ukrywania analizy.
                             Button {
                                 text: showAnalysis ? "Ukryj analizę" : "Pokaż analizę"
                                 font.pixelSize: 12
@@ -346,6 +378,7 @@ ApplicationWindow {
                             }
                         }
 
+                        /// @brief Wykres wyświetlający pomiary w czasie.
                         ChartView {
                             id: chartView
                             Layout.fillWidth: true
@@ -389,7 +422,7 @@ ApplicationWindow {
                     }
                 }
 
-                // Panel wyników analizy (przeniesiony poniżej wykresu)
+                /// @brief Panel wyników analizy pomiarów.
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: showAnalysis ? 80 : 0
@@ -418,6 +451,7 @@ ApplicationWindow {
                                 color: textColor
                             }
 
+                            /// @brief Etykieta z wynikami analizy.
                             Label {
                                 id: analysisLabel
                                 text: ""
@@ -432,7 +466,7 @@ ApplicationWindow {
                 }
             }
 
-            // Prawa kolumna - lista stacji
+            /// @brief Prawa kolumna z listą stacji pomiarowych.
             Rectangle {
                 Layout.preferredWidth: 280
                 Layout.fillHeight: true
@@ -459,6 +493,7 @@ ApplicationWindow {
                         color: borderColor
                     }
 
+                    /// @brief Lista stacji pomiarowych.
                     ListView {
                         id: stationsList
                         Layout.fillWidth: true
@@ -508,8 +543,6 @@ ApplicationWindow {
                                     currentStation = model.station
                                     currentSensor = null
                                     mainWindow.stationSelected(model.stationId)
-
-                                    // Reset historical data switch and analysis when selecting new station
                                     usingHistoricalData = false
                                     historicalDataSwitch.checked = false
                                     showAnalysis = false
@@ -527,7 +560,7 @@ ApplicationWindow {
         }
     }
 
-    // Toast notification for saving data
+    /// @brief Powiadomienie o zapisaniu danych (toast).
     Rectangle {
         id: saveDataToast
         width: saveDataToastText.width + 40
@@ -560,9 +593,15 @@ ApplicationWindow {
         }
     }
 
+    /**
+     * @brief Połączenia sygnałów z backendu MainWindow.
+     *
+     * Obsługuje aktualizacje danych w interfejsie użytkownika na podstawie sygnałów z backendu.
+     */
     Connections {
         target: mainWindow
 
+        /// @brief Aktualizuje listę stacji w interfejsie.
         function onStationsUpdateRequested(stations) {
             stationsModel.clear()
             for (var i = 0; i < stations.length; i++) {
@@ -570,10 +609,12 @@ ApplicationWindow {
             }
         }
 
+        /// @brief Aktualizuje informacje o stacji.
         function onStationInfoUpdateRequested(info) {
             stationInfo.text = info
         }
 
+        /// @brief Aktualizuje listę czujników.
         function onSensorsUpdateRequested(sensors) {
             sensorsModel.clear()
             sensorsModel.append({display: "Wybierz czujnik...", sensorId: 0})
@@ -586,6 +627,7 @@ ApplicationWindow {
             analysisLabel.text = ""
         }
 
+        /// @brief Aktualizuje wykres pomiarów.
         function onMeasurementsUpdateRequested(key, values) {
             measurementSeries.clear()
             chartView.title = "Pomiary parametru: " + key
@@ -624,6 +666,7 @@ ApplicationWindow {
             }
         }
 
+        /// @brief Aktualizuje indeks jakości powietrza.
         function onAirQualityUpdateRequested(qualityText, color) {
             airQualityLabel.text = qualityText
             airQualityLabel.color = color
@@ -647,15 +690,16 @@ ApplicationWindow {
             qualityIndicator.children[0].text = icon
         }
 
+        /// @brief Aktualizuje dostępność danych historycznych.
         function onHistoricalDataAvailableChanged(available) {
             hasHistoricalData = available;
-
             if (!available && usingHistoricalData) {
                 usingHistoricalData = false;
                 historicalDataSwitch.checked = false;
             }
         }
 
+        /// @brief Aktualizuje wyniki analizy pomiarów.
         function onAnalysisUpdateRequested(analysis) {
             if (analysis.error) {
                 analysisLabel.text = analysis.error
